@@ -82,7 +82,7 @@ def micro_averaging(dataset, target, device='cuda:0'):
                 target_scores.append(float(annot[target]))
 
                 scores = word_mover_score(references, [' '.join(annot['text'])] * num_refs, idf_dict_ref, idf_dict_hyp, stop_words,
-                                        n_gram=1, remove_subwords=True, batch_size=48)
+                                        n_gram=1, remove_subwords=True, batch_size=48, device=device)
 
                 prediction_scores.append(np.mean(scores))
 
@@ -93,9 +93,8 @@ def micro_averaging(dataset, target, device='cuda:0'):
     return np.array(correlations)
 
 
-for i in range(len(human_scores)):
-    print(human_scores[i])
-    bert_corr = micro_averaging(dataset[i], human_scores[i], device='cuda:0')
-    print_average_correlation(bert_corr)
-    
-    
+if __name__ == '__main__':
+    for i in range(len(human_scores)):
+        print(human_scores[i])
+        bert_corr = micro_averaging(dataset[i], human_scores[i], device='cpu')
+        print_average_correlation(bert_corr)

@@ -13,8 +13,13 @@ from functools import partial
 
 
 from transformers import *
-model_name = 'distilbert-base-uncased'
-device = 'cuda:0'
+# model_name = 'distilbert-base-uncased'
+# device = 'cuda:0'
+# changed by wchen
+import os
+model_name = os.path.join('..', '..', 'pytorch_transformers', 'distilbert-base-uncased')
+device = 'cpu'
+
 config = DistilBertConfig.from_pretrained(model_name, output_hidden_states=True, output_attentions=True)
 tokenizer = DistilBertTokenizer.from_pretrained(model_name, do_lower_case=True)
 model = DistilBertModel.from_pretrained(model_name, config=config)
