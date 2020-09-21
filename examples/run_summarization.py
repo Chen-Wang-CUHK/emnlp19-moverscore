@@ -5,6 +5,9 @@ import codecs
 import copy
 import torch
 
+import sys
+sys.path.append('../')
+
 #from moverscore import get_idf_dict, word_mover_score
 from moverscore_v2 import get_idf_dict, word_mover_score, plot_example
 
