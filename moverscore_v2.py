@@ -21,14 +21,17 @@ model_name = os.path.join('..', '..', 'pytorch_transformers', 'distilbert-base-u
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 config = DistilBertConfig.from_pretrained(model_name, output_hidden_states=True, output_attentions=True)
+MAX_POSITION = config.max_position_embeddings
 tokenizer = DistilBertTokenizer.from_pretrained(model_name, do_lower_case=True)
 model = DistilBertModel.from_pretrained(model_name, config=config)
 model.eval()
 model.to(device) 
                 
 def truncate(tokens):
-    if len(tokens) > tokenizer.max_len - 2:
-        tokens = tokens[0:(tokenizer.max_len - 2)]
+    # changed by wchen to fix the max position bug
+    # tokenizer.max_len -> MAX_POSITION
+    if len(tokens) > MAX_POSITION - 2:
+        tokens = tokens[0:(MAX_POSITION - 2)]
     return tokens
 
 def process(a):

@@ -9,10 +9,10 @@ import sys
 sys.path.append('../')
 
 #from moverscore import get_idf_dict, word_mover_score
-from moverscore_v2 import get_idf_dict, word_mover_score, plot_example
+from moverscore_v2 import get_idf_dict, word_mover_score, plot_example, MAX_POSITION
 
 BASE_FOLDER = "data"
-name = "tac.09.mds.gen.resp-pyr"
+name = "tac.2010.mds.gen.resp-pyr"
 
 def load_json(filename):
     filepath = os.path.join(BASE_FOLDER, filename)
@@ -75,7 +75,7 @@ def micro_averaging(dataset, target, device='cuda:0'):
     idf_dict_hyp = get_idf_dict(summaries)
 
     correlations = []
-    for topic in tqdm(dataset): 
+    for topic in tqdm(dataset):
         k,v = topic
         references = [' '.join(ref['text']) for ref in v['references']]
         num_refs = len(references)
