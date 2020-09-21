@@ -3,6 +3,7 @@ import os
 import json
 import codecs
 import copy
+import torch
 
 #from moverscore import get_idf_dict, word_mover_score
 from moverscore_v2 import get_idf_dict, word_mover_score, plot_example
@@ -96,5 +97,6 @@ def micro_averaging(dataset, target, device='cuda:0'):
 if __name__ == '__main__':
     for i in range(len(human_scores)):
         print(human_scores[i])
-        bert_corr = micro_averaging(dataset[i], human_scores[i], device='cpu')
+        device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        bert_corr = micro_averaging(dataset[i], human_scores[i], device=device)
         print_average_correlation(bert_corr)

@@ -18,7 +18,7 @@ from transformers import *
 # changed by wchen
 import os
 model_name = os.path.join('..', '..', 'pytorch_transformers', 'distilbert-base-uncased')
-device = 'cpu'
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 config = DistilBertConfig.from_pretrained(model_name, output_hidden_states=True, output_attentions=True)
 tokenizer = DistilBertTokenizer.from_pretrained(model_name, do_lower_case=True)
