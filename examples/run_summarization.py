@@ -12,7 +12,7 @@ sys.path.append('../')
 from moverscore_v2 import get_idf_dict, word_mover_score, plot_example, MAX_POSITION
 
 BASE_FOLDER = "data"
-name = "tac.2010.mds.gen.resp-pyr"
+name = "tac.09.mds.gen.resp-pyr"
 
 def load_json(filename):
     filepath = os.path.join(BASE_FOLDER, filename)
@@ -31,6 +31,49 @@ def normalize_responsiveness(dataset):
     return dataset
 
 tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
+
+# # # For debug, compare the generated tac_09 and the original tac_09
+# # /****
+# gen_tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json("tac.09.trueRef.mds.gen.resp-pyr"))
+#
+# for topic_key in gen_tac_09_mds_gen_resp_pyr:
+#     # compare references
+#     gen_refs = gen_tac_09_mds_gen_resp_pyr[topic_key]['references']
+#     orig_refs = tac_09_mds_gen_resp_pyr[topic_key]['references']
+#     gen_refs_str = [' '.join(sents['text']) for sents in gen_refs]
+#     orig_refs_str = [' '.join(sents['text']) for sents in orig_refs]
+#     for one_gen_ref_str in gen_refs_str:
+#         assert one_gen_ref_str in orig_refs_str, '\n{}: the original_refs_str:\n{}\ndoes not contain the one_gen_ref_str:\n{}\n'.format(topic_key, orig_refs_str, one_gen_ref_str)
+#
+#     # compare annotations
+#     gen_annots = gen_tac_09_mds_gen_resp_pyr[topic_key]['annotations']
+#     orig_annots = tac_09_mds_gen_resp_pyr[topic_key]['annotations']
+#     assert len(gen_annots) == len(orig_annots) - len(orig_refs)
+#     for i in range(len(gen_annots)):
+#         one_gen_annots = gen_annots[i]
+#         one_orig_annots = orig_annots[i]
+#         err_msg = '{}_annot_sum{}:\none_gen_annots:\n{}\none_orig_annots:\n{}'.format(topic_key, i+1, one_gen_annots, one_orig_annots)
+#         for annot_key in one_gen_annots:
+#             if annot_key == 'text':
+#                 one_gen_annots_text = ' '.join(one_gen_annots[annot_key]).strip().replace(',', '').replace('.','').split()
+#                 one_gen_annots_set = set(one_gen_annots_text)
+#                 one_orig_annots_text = ' '.join(one_orig_annots[annot_key]).strip().replace(',', '').replace('.','').split()
+#                 one_orig_annots_set = set(one_orig_annots_text)
+#                 if len(one_gen_annots_set) == 0:
+#                     assert len(one_orig_annots_set) == 0, 'Inconsistent key: {}'.format(annot_key) + err_msg
+#                 else:
+#                     jc_sim = len(one_gen_annots_set & one_orig_annots_set) * 1.0 / len(one_gen_annots_set | one_orig_annots_set)
+#                     assert jc_sim >= 0.93, 'Inconsistent key: {}'.format(annot_key) + err_msg
+#             elif annot_key == 'summ_id':
+#                 assert str(one_gen_annots[annot_key]) == one_orig_annots[annot_key], 'Inconsistent key: {}'.format(
+#                     annot_key) + err_msg
+#             else:
+#                 assert one_gen_annots[annot_key] == one_orig_annots[annot_key], 'Inconsistent key: {}'.format(annot_key) + err_msg
+# print('here')
+# # ****/
+
+
+
 
 def merge_datasets(lst_datasets):
     merged_dataset = {}
