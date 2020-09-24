@@ -11,8 +11,17 @@ sys.path.append('../')
 #from moverscore import get_idf_dict, word_mover_score
 from moverscore_v2 import get_idf_dict, word_mover_score, plot_example, MAX_POSITION
 
+import config
+
+# get the general configuration
+parser = config.ArgumentParser("run_summarization.py")
+config.general_args(parser)
+opt = parser.parse_args()
+print("\nScript: run_summarization.py")
+print("Configurations:", opt)
+
 BASE_FOLDER = "data"
-name = "tac.09.mds.gen.resp-pyr"
+name = opt.dataset
 
 def load_json(filename):
     filepath = os.path.join(BASE_FOLDER, filename)
@@ -34,7 +43,7 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 
 # # # For debug, compare the generated tac_09 and the original tac_09
 # # /****
-# gen_tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json("tac.09.trueRef.mds.gen.resp-pyr"))
+# gen_tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json("tac.09.trueRef.withTrueRefsInSys.mds.gen.resp-pyr"))
 #
 # for topic_key in gen_tac_09_mds_gen_resp_pyr:
 #     # compare references
@@ -48,7 +57,7 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 #     # compare annotations
 #     gen_annots = gen_tac_09_mds_gen_resp_pyr[topic_key]['annotations']
 #     orig_annots = tac_09_mds_gen_resp_pyr[topic_key]['annotations']
-#     assert len(gen_annots) == len(orig_annots) - len(orig_refs)
+#     assert (len(gen_annots) == len(orig_annots) - len(orig_refs)) or (len(gen_annots) == len(orig_annots))
 #     for i in range(len(gen_annots)):
 #         one_gen_annots = gen_annots[i]
 #         one_orig_annots = orig_annots[i]
