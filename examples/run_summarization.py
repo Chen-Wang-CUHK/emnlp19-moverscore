@@ -11,11 +11,11 @@ sys.path.append('../')
 #from moverscore import get_idf_dict, word_mover_score
 from moverscore_v2 import get_idf_dict, word_mover_score, plot_example, MAX_POSITION
 
-import config
+import mvrs_config
 
 # get the general configuration
-parser = config.ArgumentParser("run_summarization.py")
-config.general_args(parser)
+parser = mvrs_config.ArgumentParser("run_summarization.py")
+mvrs_config.general_args(parser)
 opt = parser.parse_args()
 print("\nScript: run_summarization.py")
 print("Configurations:", opt)
