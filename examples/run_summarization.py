@@ -53,6 +53,8 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 #     orig_refs_str = [' '.join(sents['text']) for sents in orig_refs]
 #     for one_gen_ref_str in gen_refs_str:
 #         assert one_gen_ref_str in orig_refs_str, '\n{}: the original_refs_str:\n{}\ndoes not contain the one_gen_ref_str:\n{}\n'.format(topic_key, orig_refs_str, one_gen_ref_str)
+#     for one_orig_ref_str in orig_refs_str:
+#         assert one_orig_ref_str in gen_refs_str, '\n{}: the generated_refs_str:\n{}\ndoes not contain the one_orig_ref_str:\n{}\n'.format(topic_key, gen_refs_str, one_orig_ref_str)
 #
 #     # compare annotations
 #     gen_annots = gen_tac_09_mds_gen_resp_pyr[topic_key]['annotations']
@@ -61,7 +63,9 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 #     for i in range(len(gen_annots)):
 #         one_gen_annots = gen_annots[i]
 #         one_orig_annots = orig_annots[i]
-#         err_msg = '{}_annot_sum{}:\none_gen_annots:\n{}\none_orig_annots:\n{}'.format(topic_key, i+1, one_gen_annots, one_orig_annots)
+#         # err_msg = '{}_annot_sum{}:\none_gen_annots:\n{}\none_orig_annots:\n{}'.format(topic_key, i+1, one_gen_annots, one_orig_annots)
+#         err_msg = '{}_annot_sum{}:\none_gen_annots:\n{}\none_orig_annots:\n{}'.format(topic_key, i+1, one_gen_annots['text'], one_orig_annots['text'])
+#         err_msg = err_msg + '\none_gen_annots:\n{}\none_orig_annots:\n{}'.format(' '.join(one_gen_annots['text']), ' '.join(one_orig_annots['text']))
 #         for annot_key in one_gen_annots:
 #             if annot_key == 'text':
 #                 one_gen_annots_text = ' '.join(one_gen_annots[annot_key]).strip().replace(',', '').replace('.','').split()
@@ -72,6 +76,8 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 #                     assert len(one_orig_annots_set) == 0, 'Inconsistent key: {}'.format(annot_key) + err_msg
 #                 else:
 #                     jc_sim = len(one_gen_annots_set & one_orig_annots_set) * 1.0 / len(one_gen_annots_set | one_orig_annots_set)
+#                     if jc_sim != 1:
+#                         print(topic_key + '\n' + err_msg + '\n')
 #                     assert jc_sim >= 0.93, 'Inconsistent key: {}'.format(annot_key) + err_msg
 #             elif annot_key == 'summ_id':
 #                 assert str(one_gen_annots[annot_key]) == one_orig_annots[annot_key], 'Inconsistent key: {}'.format(
@@ -127,25 +133,31 @@ def micro_averaging(dataset, target, device='cuda:0'):
     idf_dict_hyp = get_idf_dict(summaries)
 
     correlations = []
+    annot_sent_cnt = {0: 0, 1: 0}
     for topic in tqdm(dataset):
         k,v = topic
         references = [' '.join(ref['text']) for ref in v['references']]
         num_refs = len(references)
         target_scores, prediction_scores = [], []      
 
-        for annot in v['annotations']:            
-            if len(annot['text']) > 1:
+        for annot in v['annotations']:
+            # changed by wchen: '>' -> '>=' to include the one sentence annotations
+            if len(annot['text']) >= 1:
+                if len(annot['text']) == 1:
+                    annot_sent_cnt[1] += 1
                 target_scores.append(float(annot[target]))
 
                 scores = word_mover_score(references, [' '.join(annot['text'])] * num_refs, idf_dict_ref, idf_dict_hyp, stop_words,
                                         n_gram=1, remove_subwords=True, batch_size=48, device=device)
 
                 prediction_scores.append(np.mean(scores))
-
+            else:
+                annot_sent_cnt[0] += 1
         correlations.append([
-                         stats.kendalltau(target_scores, prediction_scores)[0], 
+                         stats.kendalltau(target_scores, prediction_scores)[0],
                          stats.pearsonr(target_scores, prediction_scores)[0],
                          stats.spearmanr(target_scores, prediction_scores)[0]])
+    print('\n annot_sent_cnt: {} \n'.format(annot_sent_cnt))
     return np.array(correlations)
 
 
