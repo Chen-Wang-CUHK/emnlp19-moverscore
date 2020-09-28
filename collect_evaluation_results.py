@@ -42,7 +42,7 @@ def collect_eval_results(opts):
             log_file = open(os.path.join(log_dir, sub_dir, f))
             print("Preprocessing {}".format(os.path.join(log_dir, f)))
 
-            model_name = 'mvrsc.' + f[len(sub_dir)+1:-len('.mds.gen.resp-pyr_log.txt')]
+            model_name = 'mvrsc.' + f[len(sub_dir)+1:-len('_log.txt')]
             if model_name not in rslt_dict:
                 rslt_dict[model_name] = {}
                 for k in fieldnames:
@@ -51,7 +51,9 @@ def collect_eval_results(opts):
 
             for line in log_file:
                 line = line.strip()
-
+                if line == 'responsiveness':
+                    # we only use correlations with pyramid score
+                    break
                 for corr_metric in ['pearson', 'spearman', 'kendall']:
                     if corr_metric in line:
                         mean_r = float(line.strip().split(':')[-1].strip()[:-1])

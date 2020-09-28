@@ -148,7 +148,7 @@ def micro_averaging(dataset, target, device='cuda:0'):
                 target_scores.append(float(annot[target]))
 
                 scores = word_mover_score(references, [' '.join(annot['text'])] * num_refs, idf_dict_ref, idf_dict_hyp, stop_words,
-                                        n_gram=1, remove_subwords=True, batch_size=48, device=device)
+                                          n_gram=1, remove_subwords=True, batch_size=48, device=device)
 
                 prediction_scores.append(np.mean(scores))
             else:
