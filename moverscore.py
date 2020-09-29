@@ -18,11 +18,12 @@ import sys
 import requests
 import zipfile
 
-USERHOME = os.path.expanduser("~")
-MOVERSCORE_DIR = os.environ.get('MOVERSCORE', os.path.join(USERHOME, '.moverscore'))
+# USERHOME = os.path.expanduser("~")
+# MOVERSCORE_DIR = os.environ.get('MOVERSCORE', os.path.join(USERHOME, '.moverscore'))
+output_dir = os.path.join('..', '..', 'pytorch_transformers', 'moverscore-mnli-bert')
 
 MNLI_BERT = 'https://github.com/AIPHES/emnlp19-moverscore/releases/download/0.6/MNLI_BERT.zip'
-output_dir = os.path.join(MOVERSCORE_DIR)
+# output_dir = os.path.join(MOVERSCORE_DIR)
 
 
 def download_MNLI_BERT(url, filename):
@@ -59,7 +60,8 @@ if not os.path.exists(tarball):
         z.extractall(output_dir)
         z.close()
         
-device = 'cuda'
+# device = 'cuda'
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 #output_dir = "./uncased_L-12_H-768_A-12/mnli/" 
 
 class BertForSequenceClassification(BertPreTrainedModel):
@@ -81,9 +83,13 @@ model = BertForSequenceClassification.from_pretrained(output_dir, 3)
 model.eval()
 model.to(device)
 
+MAX_POSITION = model.config.max_position_embeddings
+
 def truncate(tokens):
-    if len(tokens) > tokenizer.max_len - 2:
-        tokens = tokens[0:(tokenizer.max_len - 2)]
+    # changed by wchen to fix the max position bug
+    # tokenizer.max_len -> MAX_POSITION
+    if len(tokens) > MAX_POSITION - 2:
+        tokens = tokens[0:(MAX_POSITION - 2)]
     return tokens
 
 def process(a):

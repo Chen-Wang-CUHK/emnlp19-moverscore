@@ -9,9 +9,6 @@ import re
 import sys
 sys.path.append('../')
 
-#from moverscore import get_idf_dict, word_mover_score
-from moverscore_v2 import get_idf_dict, word_mover_score, plot_example, MAX_POSITION
-
 import mvrs_config
 
 # get the general configuration
@@ -180,6 +177,8 @@ def micro_averaging(dataset, target, device='cuda:0'):
 
 
 if __name__ == '__main__':
+    print("\nScript: run_summarization.py")
+    print("Configurations:", opt)
     for i in range(len(human_scores)):
         print(human_scores[i])
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
