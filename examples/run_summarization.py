@@ -4,6 +4,7 @@ import json
 import codecs
 import copy
 import torch
+import re
 
 import sys
 sys.path.append('../')
@@ -43,7 +44,24 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 
 # # # For debug, compare the generated tac_09 and the original tac_09
 # # /****
+#
 # gen_tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json("tac.09.trueRef.withTrueRefsInSys.mds.gen.resp-pyr"))
+#
+# def preprocess_one_line(line):
+#     line = line.strip()
+#     orig_words = line.split()
+#     new_words = []
+#     for w in orig_words:
+#         # 1. remove "___"
+#         if len(w) >= 2 and all([c == '_' for c in w]):
+#             continue
+#         # 2. "insurgent.Four" --> " insurgent. Four"
+#         posis = [p.start() for p in re.finditer("\.",w)]
+#         if len(posis) == 1 and w[-1] != '.' and w[posis[0]+1].isupper() and len(w) > 3:
+#             w = w.replace('.', '. ')
+#         new_words.append(w)
+#     new_line = ' '.join(new_words)
+#     return new_line
 #
 # for topic_key in gen_tac_09_mds_gen_resp_pyr:
 #     # compare references
@@ -70,7 +88,7 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 #             if annot_key == 'text':
 #                 one_gen_annots_text = ' '.join(one_gen_annots[annot_key]).strip().replace(',', '').replace('.','').split()
 #                 one_gen_annots_set = set(one_gen_annots_text)
-#                 one_orig_annots_text = ' '.join(one_orig_annots[annot_key]).strip().replace(',', '').replace('.','').split()
+#                 one_orig_annots_text = preprocess_one_line(' '.join(one_orig_annots[annot_key])).strip().replace(',', '').replace('.','').split()
 #                 one_orig_annots_set = set(one_orig_annots_text)
 #                 if len(one_gen_annots_set) == 0:
 #                     assert len(one_orig_annots_set) == 0, 'Inconsistent key: {}'.format(annot_key) + err_msg
