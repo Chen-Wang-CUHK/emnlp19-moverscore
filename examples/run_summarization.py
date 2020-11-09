@@ -124,9 +124,9 @@ def merge_datasets(lst_datasets):
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 import numpy as np
-def print_average_correlation(corr_mat, ave_type='macro'):
+def print_average_correlation(corr_mat, human_metric, ave_type='macro'):
     corr_mat = np.array(corr_mat)   
-    results = dict(zip([ave_type + '_kendall', ave_type + '_pearson', ave_type + '_spearman'],
+    results = dict(zip([human_metric + '_' + ave_type + '_kendall', human_metric + '_' + ave_type + '_pearson', human_metric + '_' + ave_type + '_spearman'],
                        [np.mean(corr_mat[:,0]), 
                        np.mean(corr_mat[:,1]),
                        np.mean(corr_mat[:,2])]))
@@ -168,7 +168,7 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
     annot_sent_cnt = {0: 0, 1: 0}
     total_hss = []
     total_pss = []
-    num_th = 2 # for debug
+    num_th = 2
     for topic in tqdm(dataset):
         k,v = topic
         references = [' '.join(ref['text']) for ref in v['references']]
@@ -201,12 +201,12 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
             break
     # macro averaged correlation scores
     print('\n annot_sent_cnt: {} \n'.format(annot_sent_cnt))
-    print_average_correlation(correlations, ave_type='macro')
+    print_average_correlation(correlations, human_metric=target, ave_type='macro')
     # micro averaged correlation scores
     micro_corr = [stats.kendalltau(total_hss, total_pss)[0],
                   stats.pearsonr(total_hss, total_pss)[0],
                   stats.spearmanr(total_hss, total_pss)[0]]
-    print_average_correlation([micro_corr], ave_type='micro')
+    print_average_correlation([micro_corr], human_metric=target, ave_type='micro')
     # return np.array(correlations)
 
 
