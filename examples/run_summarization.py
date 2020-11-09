@@ -24,12 +24,16 @@ else:
 
 BASE_FOLDER = "data"
 name = opt.dataset
+year = name.split('.')[1]
+assert year in ['08', '09', '2010', '2011', 'cnndm']
+
 
 def load_json(filename):
     filepath = os.path.join(BASE_FOLDER, filename)
     with codecs.open(filepath, 'r', encoding='utf-8') as f:
         return json.loads(f.read())
-    
+
+
 def normalize_responsiveness(dataset):
     max_resp = 0.
     for k,v in dataset.items():
@@ -41,7 +45,11 @@ def normalize_responsiveness(dataset):
             annot['responsiveness'] /= float(max_resp)
     return dataset
 
-tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
+
+if year != 'cnndm':
+    dataset_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
+else:
+    dataset_mds_gen_resp_pyr = load_json(name)
 
 # # # For debug, compare the generated tac_09 and the original tac_09
 # # /****
@@ -107,8 +115,6 @@ tac_09_mds_gen_resp_pyr = normalize_responsiveness(load_json(name))
 # # ****/
 
 
-
-
 def merge_datasets(lst_datasets):
     merged_dataset = {}
     for dataset in lst_datasets:
@@ -118,22 +124,29 @@ def merge_datasets(lst_datasets):
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 import numpy as np
-def print_average_correlation(corr_mat):
+def print_average_correlation(corr_mat, ave_type='macro'):
     corr_mat = np.array(corr_mat)   
-    results = dict(zip(['kendall','pearson', 'spearman'], 
+    results = dict(zip([ave_type + '_kendall', ave_type + '_pearson', ave_type + '_spearman'],
                        [np.mean(corr_mat[:,0]), 
                        np.mean(corr_mat[:,1]),
                        np.mean(corr_mat[:,2])]))
     pp.pprint(results)
-    
-resp_data = merge_datasets([tac_09_mds_gen_resp_pyr])
-pyr_data = merge_datasets([tac_09_mds_gen_resp_pyr])        
-    
-pyr_data = dict(list(pyr_data.items()))
-resp_data = dict(list(resp_data.items()))
 
-human_scores = ['pyr_score', 'responsiveness']
-dataset = [list(pyr_data.items()), list(resp_data.items())]
+if year != 'cnndm':
+    tac_resp_data = merge_datasets([dataset_mds_gen_resp_pyr])
+    tac_pyr_data = merge_datasets([dataset_mds_gen_resp_pyr])
+
+    tac_pyr_data = dict(list(tac_pyr_data.items()))
+    tac_resp_data = dict(list(tac_resp_data.items()))
+
+    human_scores = ['pyr_score', 'responsiveness']
+    dataset = [list(tac_pyr_data.items()), list(tac_resp_data.items())]
+else:
+    cnndm_overall_data = merge_datasets([dataset_mds_gen_resp_pyr])
+    cnndm_grammar_data = merge_datasets([dataset_mds_gen_resp_pyr])
+    cnndm_redundancy_data = merge_datasets([dataset_mds_gen_resp_pyr])
+    human_scores = ['overall', 'grammar', 'redundancy']
+    dataset = [list(cnndm_overall_data.items()), list(cnndm_grammar_data.items()), list(cnndm_redundancy_data.items())]
 
 with open('stopwords.txt', 'r', encoding='utf-8') as f:
     stop_words = set(f.read().strip().split(' '))
@@ -141,7 +154,7 @@ with open('stopwords.txt', 'r', encoding='utf-8') as f:
 import scipy.stats as stats
 from tqdm import tqdm 
 
-def micro_averaging(dataset, target, device='cuda:0'):
+def micro_macro_averaging(dataset, target, device='cuda:0'):
     references, summaries = [], []
     for topic in dataset:
         k,v = topic
@@ -153,6 +166,8 @@ def micro_averaging(dataset, target, device='cuda:0'):
 
     correlations = []
     annot_sent_cnt = {0: 0, 1: 0}
+    total_hss = []
+    total_pss = []
     for topic in tqdm(dataset):
         k,v = topic
         references = [' '.join(ref['text']) for ref in v['references']]
@@ -172,12 +187,23 @@ def micro_averaging(dataset, target, device='cuda:0'):
                 prediction_scores.append(np.mean(scores))
             else:
                 annot_sent_cnt[0] += 1
-        correlations.append([
-                         stats.kendalltau(target_scores, prediction_scores)[0],
-                         stats.pearsonr(target_scores, prediction_scores)[0],
-                         stats.spearmanr(target_scores, prediction_scores)[0]])
+        total_hss.extend(target_scores)
+        total_pss.extend(prediction_scores)
+        # skip the case that has equal human scores for each system
+        if not (np.array(target_scores) == target_scores[0]).all():
+            correlations.append([
+                             stats.kendalltau(target_scores, prediction_scores)[0],
+                             stats.pearsonr(target_scores, prediction_scores)[0],
+                             stats.spearmanr(target_scores, prediction_scores)[0]])
+    # macro averaged correlation scores
     print('\n annot_sent_cnt: {} \n'.format(annot_sent_cnt))
-    return np.array(correlations)
+    print_average_correlation(correlations, ave_type='macro')
+    # micro averaged correlation scores
+    micro_corr = [stats.kendalltau(total_hss, total_pss)[0],
+                  stats.pearsonr(total_hss, total_pss)[0],
+                  stats.spearmanr(total_hss, total_pss)[0]]
+    print_average_correlation(micro_corr, ave_type='micro')
+    # return np.array(correlations)
 
 
 if __name__ == '__main__':
@@ -186,5 +212,4 @@ if __name__ == '__main__':
     for i in range(len(human_scores)):
         print(human_scores[i])
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        bert_corr = micro_averaging(dataset[i], human_scores[i], device=device)
-        print_average_correlation(bert_corr)
+        bert_corr = micro_macro_averaging(dataset[i], human_scores[i], device=device)
