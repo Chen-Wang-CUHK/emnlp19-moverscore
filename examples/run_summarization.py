@@ -168,6 +168,7 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
     annot_sent_cnt = {0: 0, 1: 0}
     total_hss = []
     total_pss = []
+    num_th = 2 # for debug
     for topic in tqdm(dataset):
         k,v = topic
         references = [' '.join(ref['text']) for ref in v['references']]
@@ -195,6 +196,9 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
                              stats.kendalltau(target_scores, prediction_scores)[0],
                              stats.pearsonr(target_scores, prediction_scores)[0],
                              stats.spearmanr(target_scores, prediction_scores)[0]])
+        num_th = num_th - 1
+        if num_th <= 0:
+            break
     # macro averaged correlation scores
     print('\n annot_sent_cnt: {} \n'.format(annot_sent_cnt))
     print_average_correlation(correlations, ave_type='macro')
@@ -202,7 +206,7 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
     micro_corr = [stats.kendalltau(total_hss, total_pss)[0],
                   stats.pearsonr(total_hss, total_pss)[0],
                   stats.spearmanr(total_hss, total_pss)[0]]
-    print_average_correlation(micro_corr, ave_type='micro')
+    print_average_correlation([micro_corr], ave_type='micro')
     # return np.array(correlations)
 
 
