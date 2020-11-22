@@ -80,7 +80,7 @@ if __name__ == "__main__":
                         help="The folder that stored the evaluation logs.")
     parser.add_argument("--saved_folder", "-saved_folder", type=str, default='logs',
                         help="The folder to save the collected evaluation results.")
-    parser.add_argument("--csv_name_base", "-csv_name_base", type=str, default='all_eval_results',
+    parser.add_argument("--csv_name_base", "-csv_name_base", type=str, default='moverscore',
                         help="The name base of the saved .csv file.")
     opts = parser.parse_args()
 
