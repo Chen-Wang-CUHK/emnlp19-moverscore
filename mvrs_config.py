@@ -13,5 +13,7 @@ def general_args(parser):
               help="The moverscore version. v1 uses mnli-bert model and v2 uses distilbert-base-uncased model")
     group.add('--centrality_weighting', '-centrality_weighting', action='store_true',
               help='If set, use the sentence centrality as the weight of corresponding tokens.')
+    group.add('--sys_summ_equal_weights', '-sys_summ_equal_weights', action='store_true',
+              help='If set, use equal weights for sys summs.')
     group.add('--lambda_redund', '-lambda_redund', type=float, default=0.0,
               help='If set > 0, include the redundancy score, lambda is set.')

@@ -11,6 +11,8 @@ sys.path.append('../')
 
 import mvrs_config
 
+from collections import defaultdict
+
 # get the general configuration
 parser = mvrs_config.ArgumentParser("run_summarization.py")
 mvrs_config.general_args(parser)
@@ -156,7 +158,7 @@ import scipy.stats as stats
 from tqdm import tqdm 
 
 
-def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_redund=0.0, device='cuda:0'):
+def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_redund=0.0, sys_summ_equal_weights=False, device='cuda:0'):
     references, summaries = [], []
     for topic in dataset:
         k,v = topic
@@ -165,7 +167,10 @@ def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_re
 
     if not centrality_weighting:
         idf_dict_ref = get_idf_dict(references)
-    idf_dict_hyp = get_idf_dict(summaries)
+    if sys_summ_equal_weights:
+        idf_dict_hyp = defaultdict(lambda: 1)
+    else:
+        idf_dict_hyp = get_idf_dict(summaries)
 
     correlations = []
     annot_sent_cnt = {0: 0, 1: 0}
@@ -232,4 +237,6 @@ if __name__ == '__main__':
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         bert_corr = micro_macro_averaging(dataset[i], human_scores[i],
                                           centrality_weighting=opt.centrality_weighting,
-                                          lambda_redund=opt.lambda_redund, device=device)
+                                          lambda_redund=opt.lambda_redund,
+                                          sys_summ_equal_weights=opt.sys_summ_equal_weights,
+                                          device=device)
