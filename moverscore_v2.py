@@ -40,6 +40,22 @@ def process(a):
     return set(a)
 
 
+def get_cw_dict(list_sents, list_sents_weights):
+    cw_dict = defaultdict(lambda: 0)
+    for sents, sents_weights in zip(list_sents, list_sents_weights):
+        for s, sw in zip(sents, sents_weights):
+            a = truncate(tokenizer.tokenize(s))
+            a = tokenizer.convert_tokens_to_ids(a)
+            a = set(a)
+            for w in a:
+                if w in cw_dict:
+                    cw_dict[w] = cw_dict[w] + sw
+                else:
+                    cw_dict[w] = sw
+    return cw_dict
+
+
+
 def get_idf_dict(arr, nthreads=4):
     idf_count = Counter()
     num_docs = len(arr)
@@ -126,7 +142,7 @@ def batched_cdist_l2(x1, x2):
     ).add_(x1_norm).clamp_min_(1e-30).sqrt_()
     return res
 
-def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=1, remove_subwords = True, batch_size=256, device='cuda:0'):
+def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=1, remove_subwords = True, batch_size=256, device='cuda:0', mask_self=False):
     preds = []
     for batch_start in range(0, len(refs), batch_size):
         batch_refs = refs[batch_start:batch_start+batch_size]
@@ -160,7 +176,7 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
         raw.div_(torch.norm(raw, dim=-1).unsqueeze(-1) + 1e-30) 
         
         distance_matrix = batched_cdist_l2(raw, raw).double().cpu().numpy()
-                
+
         for i in range(batch_size):  
             c1 = np.zeros(raw.shape[1], dtype=np.float)
             c2 = np.zeros(raw.shape[1], dtype=np.float)
@@ -171,8 +187,15 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
             c2 = _safe_divide(c2, np.sum(c2))
             
             dst = distance_matrix[i]
+            # mask_self, add by wchen
+            if mask_self:
+                np.fill_diagonal(dst[:len(ref_idf[i]), len(ref_idf[i]):], np.max(dst)*1000)
+
             _, flow = emd_with_flow(c1, c2, dst)
             flow = np.array(flow, dtype=np.float32)
+            # mask_self, add by wchen
+            if mask_self:
+                np.fill_diagonal(dst, 0.0)
             score = 1 - np.sum(flow * dst)
             preds.append(score)
 

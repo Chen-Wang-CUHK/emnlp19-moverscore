@@ -209,7 +209,7 @@ def load_ngram(ids, embedding, idf, n, o):
     new_a = torch.stack(new_a, 0).to(device)
     return new_a, new_idf
 
-def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=1, remove_subwords = True, batch_size=256, device='cuda:0'):
+def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=1, remove_subwords = True, batch_size=256, device='cuda:0', mask_self=False):
     preds = []
     for batch_start in range(0, len(refs), batch_size):
         batch_refs = refs[batch_start:batch_start+batch_size]
@@ -250,6 +250,11 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
             raw.div_(torch.norm(raw, dim=-1).unsqueeze(-1) + 0.000001) 
             
             distance_matrix = pairwise_distances(raw, raw)
+
+            # mask_self, add by wchen
+            if mask_self:
+                raise NotImplementedError
+                # np.fill_diagonal(distance_matrix[0], np.inf)
 
             c1 = np.zeros(len(ref_idf_i) + len(hyp_idf_i), dtype=np.double)
             c2 = np.zeros(len(ref_idf_i) + len(hyp_idf_i), dtype=np.double)

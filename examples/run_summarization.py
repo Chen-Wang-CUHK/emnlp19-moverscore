@@ -17,10 +17,11 @@ mvrs_config.general_args(parser)
 opt = parser.parse_args()
 
 if opt.mvrs_type == 'v1':
-    from moverscore import get_idf_dict, word_mover_score
+    from moverscore import get_idf_dict, word_mover_score, get_cw_dict
 else:
     assert opt.mvrs_type == 'v2'
-    from moverscore_v2 import get_idf_dict, word_mover_score, plot_example, MAX_POSITION
+    from moverscore_v2 import get_idf_dict, word_mover_score, get_cw_dict, plot_example, MAX_POSITION
+
 
 BASE_FOLDER = "data"
 name = opt.dataset
@@ -154,14 +155,16 @@ with open('stopwords.txt', 'r', encoding='utf-8') as f:
 import scipy.stats as stats
 from tqdm import tqdm 
 
-def micro_macro_averaging(dataset, target, device='cuda:0'):
+
+def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_redund=0.0, device='cuda:0'):
     references, summaries = [], []
     for topic in dataset:
         k,v = topic
         references.extend([' '.join(ref['text']) for ref in v['references']])
         summaries.extend([' '.join(annot['text']) for annot in v['annotations']])
- 
-    idf_dict_ref = get_idf_dict(references)
+
+    if not centrality_weighting:
+        idf_dict_ref = get_idf_dict(references)
     idf_dict_hyp = get_idf_dict(summaries)
 
     correlations = []
@@ -174,6 +177,12 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
         num_refs = len(references)
         target_scores, prediction_scores = [], []      
 
+        # use centrality as weight if set
+        if centrality_weighting:
+            ref_sents = [ref['text'] for ref in v['references']]
+            ref_sents_weights = [ref['sents_weights'] for ref in v['references']]
+            idf_dict_ref = get_cw_dict(ref_sents, ref_sents_weights)
+
         for annot in v['annotations']:
             # changed by wchen: '>' -> '>=' to include the one sentence annotations
             if len(annot['text']) >= 1:
@@ -183,8 +192,15 @@ def micro_macro_averaging(dataset, target, device='cuda:0'):
 
                 scores = word_mover_score(references, [' '.join(annot['text'])] * num_refs, idf_dict_ref, idf_dict_hyp, stop_words,
                                           n_gram=1, remove_subwords=True, batch_size=48, device=device)
-
-                prediction_scores.append(np.mean(scores))
+                if lambda_redund > 0:
+                    redundancy_score = word_mover_score([' '.join(annot['text'])], [' '.join(annot['text'])],
+                                                        idf_dict_hyp, idf_dict_hyp, stop_words,
+                                                        n_gram=1, remove_subwords=True, batch_size=48, device=device,
+                                                        mask_self=True)
+                    final_score = np.mean(scores) - lambda_redund * np.mean(redundancy_score)
+                else:
+                    final_score = np.mean(scores)
+                prediction_scores.append(final_score)
             else:
                 annot_sent_cnt[0] += 1
         total_hss.extend(target_scores)
@@ -214,4 +230,6 @@ if __name__ == '__main__':
     for i in range(len(human_scores)):
         print(human_scores[i])
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        bert_corr = micro_macro_averaging(dataset[i], human_scores[i], device=device)
+        bert_corr = micro_macro_averaging(dataset[i], human_scores[i],
+                                          centrality_weighting=opt.centrality_weighting,
+                                          lambda_redund=opt.lambda_redund, device=device)
