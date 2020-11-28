@@ -158,7 +158,7 @@ import scipy.stats as stats
 from tqdm import tqdm 
 
 
-def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_redund=0.0, sys_summ_equal_weights=False, device='cuda:0'):
+def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_redund=0.0, sys_summ_equal_weights=False, mean_cw=False, device='cuda:0'):
     references, summaries = [], []
     for topic in dataset:
         k,v = topic
@@ -186,7 +186,7 @@ def micro_macro_averaging(dataset, target, centrality_weighting=False, lambda_re
         if centrality_weighting:
             ref_sents = [ref['text'] for ref in v['references']]
             ref_sents_weights = [ref['sents_weights'] for ref in v['references']]
-            idf_dict_ref = get_cw_dict(ref_sents, ref_sents_weights)
+            idf_dict_ref = get_cw_dict(ref_sents, ref_sents_weights, mean_cw=mean_cw)
 
         for annot in v['annotations']:
             # changed by wchen: '>' -> '>=' to include the one sentence annotations
@@ -239,4 +239,5 @@ if __name__ == '__main__':
                                           centrality_weighting=opt.centrality_weighting,
                                           lambda_redund=opt.lambda_redund,
                                           sys_summ_equal_weights=opt.sys_summ_equal_weights,
+                                          mean_cw=opt.mean_cw,
                                           device=device)

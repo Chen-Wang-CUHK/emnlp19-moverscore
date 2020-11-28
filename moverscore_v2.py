@@ -40,18 +40,24 @@ def process(a):
     return set(a)
 
 
-def get_cw_dict(list_sents, list_sents_weights):
-    cw_dict = defaultdict(lambda: 0)
+def get_cw_dict(list_sents, list_sents_weights, mean_cw=False):
+    tmp_cw_dict = {}
     for sents, sents_weights in zip(list_sents, list_sents_weights):
         for s, sw in zip(sents, sents_weights):
             a = truncate(tokenizer.tokenize(s))
             a = tokenizer.convert_tokens_to_ids(a)
             a = set(a)
             for w in a:
-                if w in cw_dict:
-                    cw_dict[w] = cw_dict[w] + sw
+                if w in tmp_cw_dict:
+                    tmp_cw_dict[w].append(sw)
                 else:
-                    cw_dict[w] = sw
+                    tmp_cw_dict[w] = [sw]
+    cw_dict = defaultdict(lambda: 0)
+    for w in tmp_cw_dict:
+        if mean_cw:
+            cw_dict[w] = sum(tmp_cw_dict[w]) * 1.0 / len(tmp_cw_dict[w])
+        else:
+            cw_dict[w] = sum(tmp_cw_dict[w])
     return cw_dict
 
 

@@ -17,3 +17,5 @@ def general_args(parser):
               help='If set, use equal weights for sys summs.')
     group.add('--lambda_redund', '-lambda_redund', type=float, default=0.0,
               help='If set > 0, include the redundancy score, lambda is set.')
+    group.add('--mean_cw', '-meam_cw', action='store_true',
+              help='If set, use average centrality weight for each token.')
